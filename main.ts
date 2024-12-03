@@ -241,6 +241,43 @@ export default class OdysseusAPIPlugin extends Plugin {
 				} 
 			}
 		});
+		this.addCommand({
+            id: 'buscar-por-real-time-web-search',
+            name: 'Web Search',
+            editorCallback: async (editor: Editor, view: MarkdownView) => {
+                const query = editor.getSelection();
+                const apiKey = 'd71bd39b97msh2d2f248d6e03052p128d46jsnfc94ad766c04';
+
+                showWaitMessage();
+                try {
+                    const response = await fetchRealTimeWebSearchData(query, apiKey);
+                    const resultDiv = createResultDiv(`*Resultado da Busca Real-Time Web Search:* ${query}`);
+                    editor.replaceSelection(resultDiv + formatarJsonParaObsidian(response));
+                    new Notice('Busca Efetuada com sucesso');
+                } catch (error) {
+                    new Notice('Erro ao buscar dados do Real-Time Web Search');
+                } finally {
+                    removeWaitMessage();
+                }
+            }
+        });
+		async function fetchRealTimeWebSearchData(query: string, apiKey: string): Promise<any> {
+			try {
+				const response = await fetch(`https://real-time-web-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&limit=300`, {
+					method: 'GET',
+					headers: {
+						'X-Rapidapi-Key': apiKey,
+						'X-Rapidapi-Host': 'real-time-web-search.p.rapidapi.com'
+					}
+				});
+				if (!response.ok) {
+					throw new Error(`Erro na requisição: ${response.statusText}`);
+				}
+				return await response.json();
+			} catch (error) {
+				throw new Error(`Erro na requisição: ${error.message}`);
+			}
+		}
 		async function loadSitesJson(filePath: string): Promise<any> {
 			return new Promise((resolve, reject) => {
 				fs.readFile(filePath, 'utf8', (err, data) => {
@@ -263,7 +300,46 @@ export default class OdysseusAPIPlugin extends Plugin {
 				"-H 'DNT: 1'",
 				"-H 'Upgrade-Insecure-Requests: 1'"
 			].join(' ');
-		
+			const createReportHeader = (username: string): string => {
+				const date = new Date().toLocaleDateString();
+				return `# Relatório de Verificação de Usuário\n\n**Usuário:** ${username}\n**Data:** ${date}\n\n`;
+			};
+
+			// Add this at the beginning of the checkUserExists function
+			const header = createReportHeader(username);
+			editor.replaceSelection(header);
+			const terminalThemeCss = `
+				body {
+					background-color: #1e1e1e;
+					color: #00ff00;
+					font-family: 'Courier New', Courier, monospace;
+				}
+				.terminal-header {
+					background-color: #333;
+					color: #00ff00;
+					padding: 10px;
+					text-align: center;
+					font-weight: bold;
+				}
+				.terminal-content {
+					padding: 20px;
+				}
+			`;
+
+			const styleElement = document.createElement('style');
+			styleElement.innerHTML = terminalThemeCss;
+			document.head.appendChild(styleElement);
+
+			const terminalHeader = document.createElement('div');
+			terminalHeader.className = 'terminal-header';
+			terminalHeader.innerText = 'Terminal Output';
+
+			const terminalContent = document.createElement('div');
+			terminalContent.className = 'terminal-content';
+			terminalContent.innerText = 'Verificando sites...';
+
+			document.body.appendChild(terminalHeader);
+			document.body.appendChild(terminalContent);
 			for (const [site, urlTemplate] of Object.entries(sites)) {
 				const url = (urlTemplate as string).replace('{}', username);
 				const cmd = `curl -s -o /dev/null -w "%{http_code}" ${headers} ${url}`;
@@ -289,7 +365,7 @@ export default class OdysseusAPIPlugin extends Plugin {
 					if (statusCode === 200) {
 						results.push(`Usuário encontrado em ${site}: ${url}`);
 						console.log(`Usuário encontrado em ${site}: ${url}`);
-						editor.replaceSelection(`Usuário encontrado em ${site}: ${url}\n`);
+						editor.replaceSelection(`${site}: ${url}\n`);
 						new Notice(`Usuário encontrado em ${site}: ${url}`);
 					} else {
 						results.push(`Usuário não encontrado em ${site}: ${url}`);
