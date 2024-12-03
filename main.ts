@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFolder } from 'obsidian';
 import { exec } from 'child_process';
+import * as path from 'path';
 import { promisify } from 'util';
 import { Console } from 'console';
 import { OdysseusPluginSettings, DEFAULT_SETTINGS, OdysseusPluginSettingTab } from './settings';
+import * as fs from 'fs';
 
 const execAsync = promisify(exec);
 const ALLOW_FILE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "pdf"];
@@ -183,7 +185,7 @@ var downloadFiles = async (data:any, files:any[], resorceFolderName:string, adap
 	
 export default class OdysseusAPIPlugin extends Plugin {
 	settings: OdysseusPluginSettings;
-
+    
 	async onload() {
 		await this.loadSettings();
 
@@ -200,7 +202,7 @@ export default class OdysseusAPIPlugin extends Plugin {
 		
 		this.addCommand({
 			id: "media-sync-now",
-			name: "Sync This File (1)",
+			name: "Enriquecer Mídia",
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 			  saveFiles(this.app, this, this.settings, [view.file], false);
 			}
@@ -218,6 +220,92 @@ export default class OdysseusAPIPlugin extends Plugin {
 			  });
 			})
 		  );
+		  this.addCommand({
+			id: 'check-user-exists',
+			name: 'Verificar Existência de Usuário em Sites',
+			editorCallback: async (editor: Editor, view: MarkdownView) => {
+				const username = editor.getSelection().trim();
+				if (!username) {
+					new Notice('Por favor, selecione um nome de usuário para verificar.');
+					return;
+				}
+
+				try {
+					const sites = await loadSitesJson(this.settings.jsonFilePath);
+					const results = await checkUserExists(sites, username, editor);
+					const resultMessage = results.join('\n');
+				   // editor.replaceSelection(resultMessage);
+					new Notice('Lista de sites: ', 10000); // Mostrar resultados por 10 segundos
+				} catch (error) {
+					new Notice(`Erro: ${error}`);
+				} 
+			}
+		});
+		async function loadSitesJson(filePath: string): Promise<any> {
+			return new Promise((resolve, reject) => {
+				fs.readFile(filePath, 'utf8', (err, data) => {
+					if (err) {
+						reject(`Failed to load JSON file: ${err.message}`);
+					} else {
+						resolve(JSON.parse(data));
+					}
+				});
+			});
+		}
+		async function checkUserExists(sites: any, username: string, editor: Editor): Promise<string[]> {
+			const results: string[] = [];
+			const headers = [
+				"-H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'",
+				"-H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'",
+				"-H 'Accept-Encoding: gzip, deflate, br'",
+				"-H 'Accept-Language: en-US,en;q=0.5'",
+				"-H 'Connection: keep-alive'",
+				"-H 'DNT: 1'",
+				"-H 'Upgrade-Insecure-Requests: 1'"
+			].join(' ');
+		
+			for (const [site, urlTemplate] of Object.entries(sites)) {
+				const url = (urlTemplate as string).replace('{}', username);
+				const cmd = `curl -s -o /dev/null -w "%{http_code}" ${headers} ${url}`;
+				console.log(`Verificando ${site}: ${url}`);
+				new Notice(`Verificando ${site}: ${url}`);
+				const waitDiv = document.createElement('div');
+				waitDiv.id = 'waitMessage';
+				waitDiv.style.position = 'fixed';
+				waitDiv.style.top = '50%';
+				waitDiv.style.left = '50%';
+				waitDiv.style.transform = 'translate(-50%, -50%)';
+				waitDiv.style.padding = '20px';
+				waitDiv.style.backgroundColor = 'black';
+				waitDiv.style.color = 'lime';
+				waitDiv.style.borderRadius = '5px';
+				waitDiv.style.zIndex = '1000';
+				waitDiv.style.fontFamily = 'monospace';
+				waitDiv.innerText = `Verificando ${site}: ${url}`;
+				document.body.appendChild(waitDiv);
+				try {
+					const { stdout } = await execAsync(cmd);
+					const statusCode = parseInt(stdout.trim(), 10);
+					if (statusCode === 200) {
+						results.push(`Usuário encontrado em ${site}: ${url}`);
+						console.log(`Usuário encontrado em ${site}: ${url}`);
+						editor.replaceSelection(`Usuário encontrado em ${site}: ${url}\n`);
+						new Notice(`Usuário encontrado em ${site}: ${url}`);
+					} else {
+						results.push(`Usuário não encontrado em ${site}: ${url}`);
+						console.log(`Usuário não encontrado em ${site}: ${url}`);
+						new Notice(`Usuário não encontrado em ${site}: ${url}`);
+					}
+				} catch (error) {
+					results.push(`Erro ao verificar ${site}: ${error.message}`);
+					console.log(`Erro ao verificar ${site}: ${error.message}`);
+					new Notice(`Erro ao verificar ${site}: ${error.message}`);
+				} finally {
+					document.body.removeChild(waitDiv);
+				}
+			}
+			return results;
+		}
 		
 		this.addCommand({
 			id: 'buscar-por-cnpj-receita',
@@ -341,8 +429,25 @@ export default class OdysseusAPIPlugin extends Plugin {
 					const imageUrl = result.data.profile_pic_url;
 					const caption = `Foto Perfil`;
 					const imageResultMarkdown = createImageResultMarkdown(imageUrl, caption);
-					const formattedResult = formatarJsonParaObsidian(result.data);
+					const formattedResult = formatResultToPortuguese(result.data,4);
 					
+					function formatResultToPortuguese(json: any, nivel: number = 0): string {
+						let resultado = '';
+						const espacos = ' '.repeat(nivel * 2); // Indentação
+
+						for (const chave in json) {
+							const chaveFormatada = chave.replace(/_/g, ' ').toUpperCase();
+							if (typeof json[chave] === 'object' && json[chave] !== null) {
+								resultado += `${espacos}- **${chaveFormatada}**:\n`;
+								resultado += formatResultToPortuguese(json[chave], nivel + 1);
+							} else {
+								resultado += `${espacos}- **${chaveFormatada}**: ${json[chave]}\n`;
+							}
+						}
+
+						return resultado;
+					}
+
 					editor.replaceSelection(resultDiv + imageResultMarkdown+formattedResult);
 					new Notice('Busca Efetuada com sucesso');
 				} catch (error) {
@@ -486,9 +591,7 @@ class ApiService {
 		constructor(app: App) {
 			this.app = app;
 		}
-	 
-
-
+	
 	
 	private  async executeHttpRequest(url: string): Promise<any> {
         try {

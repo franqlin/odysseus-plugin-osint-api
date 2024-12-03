@@ -6,13 +6,15 @@ export interface OdysseusPluginSettings {
     rapidApiHost: string;
     saveDirectory: string;
 	resourceFolderName: string;
+  jsonFilePath: string;
 }
 
 export const DEFAULT_SETTINGS: OdysseusPluginSettings = {
     rapidApiKey: '',
-    rapidApiHost: '',
+    rapidApiHost: 'instagram-scraper-api2.p.rapidapi.com',
     saveDirectory: "_media-sync_resources",
-	resourceFolderName: ""
+	  resourceFolderName: "",
+    jsonFilePath: ""
 
 };
 var SaveDirectory = {
@@ -38,7 +40,7 @@ export class OdysseusPluginSettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('RapidAPI Key')
-            .setDesc('Insira sua chave de API do RapidAPI')
+            .setDesc('Insira sua chave de API do (instagram-scraper-api2)')
             .addText(text => text
                 .setPlaceholder('Insira sua chave de API')
                 .setValue(this.plugin.settings.rapidApiKey)
@@ -94,7 +96,16 @@ export class OdysseusPluginSettingTab extends PluginSettingTab {
                     })
                     .setDisabled(true);
                 });
-           
+                new Setting(containerEl)
+                .setName('Caminho do arquivo JSON')
+                .setDesc('Caminho para o arquivo JSON contendo a lista de sites.')
+                .addText(text => text
+                  .setPlaceholder('Insira o caminho para o arquivo JSON')
+                  .setValue(this.plugin.settings.jsonFilePath)
+                  .onChange(async (value) => {
+                    this.plugin.settings.jsonFilePath = value;
+                    await this.plugin.saveSettings();
+                  }));
     }
      async saveSettings() {
     try {
