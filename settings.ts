@@ -7,6 +7,10 @@ export interface OdysseusPluginSettings {
     saveDirectory: string;
 	resourceFolderName: string;
   jsonFilePath: string;
+  apiKeyRealTime: string;
+  limit: number;
+  apiKeyTruecaller: string;
+  apiHostTruecaller: string;
 }
 
 export const DEFAULT_SETTINGS: OdysseusPluginSettings = {
@@ -14,7 +18,11 @@ export const DEFAULT_SETTINGS: OdysseusPluginSettings = {
     rapidApiHost: 'instagram-scraper-api2.p.rapidapi.com',
     saveDirectory: "_media-sync_resources",
 	  resourceFolderName: "",
-    jsonFilePath: ""
+    jsonFilePath: "",
+    apiKeyRealTime: '',
+    limit: 300,
+    apiKeyTruecaller: '',
+    apiHostTruecaller: 'truecaller-data2.p.rapidapi.com'
 
 };
 var SaveDirectory = {
@@ -106,6 +114,48 @@ export class OdysseusPluginSettingTab extends PluginSettingTab {
                     this.plugin.settings.jsonFilePath = value;
                     await this.plugin.saveSettings();
                   }));
+                    new Setting(containerEl)
+                    .setName('Chave API para Pesquisa Web em Tempo Real')
+                    .setDesc('Chave API para Pesquisa Web em Tempo Real')
+                    .addText(text => text
+                      .setPlaceholder('Insira sua chave API')
+                      .setValue(this.plugin.settings.rapidApiKey)
+                      .onChange(async (value) => {
+                        this.plugin.settings.apiKeyRealTime = value;
+                        await this.plugin.saveSettings();
+                      }));
+              
+                  new Setting(containerEl)
+                    .setName('Limite para resultados de Pesquisa Web em Tempo Real')
+                    .setDesc('Limite para resultados de Pesquisa Web em Tempo Real')
+                    .addText(text => text
+                      .setPlaceholder('Insira o limite')
+                      .setValue(this.plugin.settings.limit.toString())
+                      .onChange(async (value) => {
+                          this.plugin.settings.limit = parseInt(value) || 300;
+                          await this.plugin.saveSettings();
+                      }));
+                      new Setting(containerEl)
+                      .setName('Chave API para Truecaller')
+                      .setDesc('Chave API para Truecaller')
+                      .addText(text => text
+                          .setPlaceholder('Insira sua chave API')
+                          .setValue(this.plugin.settings.apiKeyTruecaller)
+                          .onChange(async (value) => {
+                              this.plugin.settings.apiKeyTruecaller = value;
+                              await this.plugin.saveSettings();
+                          }));
+          
+                  new Setting(containerEl)
+                      .setName('Host API para Truecaller')
+                      .setDesc('Host API para Truecaller')
+                      .addText(text => text
+                          .setPlaceholder('Insira o host API')
+                          .setValue(this.plugin.settings.apiHostTruecaller)
+                          .onChange(async (value) => {
+                              this.plugin.settings.apiHostTruecaller = value;
+                              await this.plugin.saveSettings();
+                          }));      
     }
      async saveSettings() {
     try {

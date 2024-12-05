@@ -6,6 +6,8 @@ import { promisify } from 'util';
 import { Console } from 'console';
 import { OdysseusPluginSettings, DEFAULT_SETTINGS, OdysseusPluginSettingTab } from './settings';
 import * as fs from 'fs';
+import { search, SafeSearchType } from 'duck-duck-scrape';
+
 
 const execAsync = promisify(exec);
 const ALLOW_FILE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "pdf"];
@@ -20,6 +22,7 @@ const SKIP_URLS = [
 ];
 
 var import_obsidian2 = require("obsidian");
+const duckduckgoSearch = require("duckduckgo-search");
 
 const getFilePrefix = (): string => {
 	return 'media';
@@ -241,16 +244,17 @@ export default class OdysseusAPIPlugin extends Plugin {
 				} 
 			}
 		});
-		this.addCommand({
+        this.addCommand({
             id: 'buscar-por-real-time-web-search',
             name: 'Web Search',
             editorCallback: async (editor: Editor, view: MarkdownView) => {
                 const query = editor.getSelection();
-                const apiKey = 'd71bd39b97msh2d2f248d6e03052p128d46jsnfc94ad766c04';
+                const apiKey = this.settings.apiKeyRealTime;
+                const limit = this.settings.limit;
 
                 showWaitMessage();
                 try {
-                    const response = await fetchRealTimeWebSearchData(query, apiKey);
+                    const response = await fetchRealTimeWebSearchData(query, apiKey, limit);
                     const resultDiv = createResultDiv(`*Resultado da Busca Real-Time Web Search:* ${query}`);
                     editor.replaceSelection(resultDiv + formatarJsonParaObsidian(response));
                     new Notice('Busca Efetuada com sucesso');
@@ -261,9 +265,71 @@ export default class OdysseusAPIPlugin extends Plugin {
                 }
             }
         });
-		async function fetchRealTimeWebSearchData(query: string, apiKey: string): Promise<any> {
+		this.addCommand({
+            id: 'buscar-por-truecaller',
+            name: 'Buscar por Truecaller',
+            editorCallback: async (editor: Editor, view: MarkdownView) => {
+                const phoneNumber = editor.getSelection().trim();
+                if (!phoneNumber) {
+                    new Notice('Por favor, selecione um número de telefone para buscar.');
+                    return;
+                }
+
+                const waitDiv = document.createElement('div');
+                waitDiv.id = 'waitMessage';
+                waitDiv.style.position = 'fixed';
+                waitDiv.style.top = '50%';
+                waitDiv.style.left = '50%';
+                waitDiv.style.transform = 'translate(-50%, -50%)';
+                waitDiv.style.padding = '20px';
+                waitDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                waitDiv.style.color = 'white';
+                waitDiv.style.borderRadius = '5px';
+                waitDiv.style.zIndex = '1000';
+                waitDiv.innerText = 'Aguarde...';
+                document.body.appendChild(waitDiv);
+
+                try {
+					const response = await fetchTruecallerData(phoneNumber, this.settings.apiKeyTruecaller, this.settings.apiHostTruecaller);
+					//const resultMessage = JSON.stringify(response, null, 2);
+					const format = formatarJsonParaObsidian(response);
+
+					const reportHeader = `# Relatório de Busca Truecaller\n\n**Número de Telefone:** ${phoneNumber}\n**Data:** ${new Date().toLocaleDateString()}\n\n`;
+					const formattedReport = reportHeader + format;
+					
+					editor.replaceSelection(formattedReport);
+                    new Notice('Busca Efetuada com sucesso');
+                } catch (error) {
+                    new Notice('Erro ao buscar dados do Truecaller');
+                } finally {
+                    document.body.removeChild(waitDiv);
+                }
+            }
+        });
+
+
+
+
+async function fetchTruecallerData(phoneNumber: string, apiKey: string, apiHost: string): Promise<any> {
+    const options = {
+        method: 'GET',
+        url: `https://truecaller-data2.p.rapidapi.com/search/${phoneNumber}`,
+        headers: {
+            'x-rapidapi-key': apiKey,
+            'x-rapidapi-host': apiHost
+        }
+    };
+
+    try {
+        const response = await axios.request(options);
+        return response.data;k
+    } catch (error) {
+        throw new Error(`Erro ao buscar dados do Truecaller: ${error.message}`);
+    }
+}
+		async function fetchRealTimeWebSearchData(query: string, apiKey: string, limit: number): Promise<any> {
 			try {
-				const response = await fetch(`https://real-time-web-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&limit=300`, {
+				const response = await fetch(`https://real-time-web-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
 					method: 'GET',
 					headers: {
 						'X-Rapidapi-Key': apiKey,
@@ -326,20 +392,20 @@ export default class OdysseusAPIPlugin extends Plugin {
 				}
 			`;
 
-			const styleElement = document.createElement('style');
-			styleElement.innerHTML = terminalThemeCss;
-			document.head.appendChild(styleElement);
+			//const styleElement = document.createElement('style');
+			//styleElement.innerHTML = terminalThemeCss;
+			//document.head.appendChild(styleElement);
 
-			const terminalHeader = document.createElement('div');
-			terminalHeader.className = 'terminal-header';
-			terminalHeader.innerText = 'Terminal Output';
+			//const terminalHeader = document.createElement('div');
+			//terminalHeader.className = 'terminal-header';
+			//terminalHeader.innerText = 'Terminal Output';
 
-			const terminalContent = document.createElement('div');
-			terminalContent.className = 'terminal-content';
-			terminalContent.innerText = 'Verificando sites...';
+			//const terminalContent = document.createElement('div');
+			//terminalContent.className = 'terminal-content';
+			//terminalContent.innerText = 'Verificando sites...';
 
-			document.body.appendChild(terminalHeader);
-			document.body.appendChild(terminalContent);
+			//document.body.appendChild(terminalHeader);
+			//document.body.appendChild(terminalContent);
 			for (const [site, urlTemplate] of Object.entries(sites)) {
 				const url = (urlTemplate as string).replace('{}', username);
 				const cmd = `curl -s -o /dev/null -w "%{http_code}" ${headers} ${url}`;
@@ -382,24 +448,8 @@ export default class OdysseusAPIPlugin extends Plugin {
 			}
 			return results;
 		}
-		
-		this.addCommand({
-			id: 'buscar-por-cnpj-receita',
-			name: 'Busca por Empresa CNPJ - Receita Federal',
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-                console.log(editor.getSelection());
-                const cnpj = editor.getSelection().replace(/[^\d]/g, '');
-                const comandoToken = `curl -k -s -o -X GET https://www.receitaws.com.br/v1/cnpj/${cnpj}`;
-        
-                const resultado = await executarCurl(comandoToken);
-                const json_ = JSON.parse(resultado);
-                const resultadoFormatado = formatJsonToGraph(json_);
-                console.log(resultadoFormatado);
 
-                const resultDiv = createResultDiv(`*Resultado da Busca:* ${cnpj}`);
-                editor.replaceSelection(resultDiv + resultadoFormatado);
-			}
-		});
+
 		function createResultDiv(text: string): string {
 			return `*${text}*\n`;
 		}
