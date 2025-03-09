@@ -191,7 +191,8 @@ export default class OdysseusAPIPlugin extends Plugin {
     
 	async onload() {
 		await this.loadSettings();
-
+        // Adicione a chamada para saveSettings após carregar as configurações
+		await this.saveSettings();
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('horse', 'Odysseus::Enquecimento de Mídia"', (evt: MouseEvent) => {
 			saveFiles(this.app, this, this.settings);
@@ -251,8 +252,9 @@ export default class OdysseusAPIPlugin extends Plugin {
                 const query = editor.getSelection();
                 const apiKey = this.settings.apiKeyRealTime;
                 const limit = this.settings.limit;
-
+            
                 showWaitMessage();
+				new Notice('Buscando dados...');
                 try {
                     const response = await fetchRealTimeWebSearchData(query, apiKey, limit);
                     const resultDiv = createResultDiv(`*Resultado da Busca Real-Time Web Search:* ${query}`);
@@ -307,8 +309,51 @@ export default class OdysseusAPIPlugin extends Plugin {
             }
         });
 
+// Adicione um novo comando para buscar o perfil do LinkedIn
+this.addCommand({
+    id: 'buscar-linkedin',
+    name: 'Buscar Perfil do LinkedIn',
+    editorCallback: async (editor: Editor, view: MarkdownView) => {
+        const username = editor.getSelection().trim();
+        if (!username) {
+            new Notice('Por favor, selecione um nome de usuário para buscar.');
+            return;
+        }
 
+        showWaitMessage();
+        try {
+            const profile = await fetchLinkedInProfile(username, this);
+            const resultDiv = createResultDiv(`*Resultado da Busca LinkedIn:* ${username}`);
+            const formattedProfile = formatarJsonParaObsidian(profile);
+            editor.replaceSelection(resultDiv + formattedProfile);
+            new Notice('Busca Efetuada com sucesso');
+        } catch (error) {
+            new Notice('Erro ao buscar dados do LinkedIn');
+        } finally {
+            removeWaitMessage();
+        }
+    }
+});
 
+// ...existing code...
+
+async function fetchLinkedInProfile(username: string, plugin: OdysseusAPIPlugin): Promise<any> {
+    const options = {
+        method: 'GET',
+        url: `https://linkedin-data-api.p.rapidapi.com/?username=${username}`,
+        headers: {
+            'x-rapidapi-key': plugin.settings.rapidApiKey,
+            'x-rapidapi-host': 'linkedin-data-api.p.rapidapi.com'
+        }
+    };
+
+    try {
+        const response = await axios.request(options);
+        return response.data;
+    } catch (error) {
+        throw new Error(`Erro ao buscar dados do LinkedIn: ${error.message}`);
+    }
+}
 
 async function fetchTruecallerData(phoneNumber: string, apiKey: string, apiHost: string): Promise<any> {
     const options = {
@@ -322,7 +367,7 @@ async function fetchTruecallerData(phoneNumber: string, apiKey: string, apiHost:
 
     try {
         const response = await axios.request(options);
-        return response.data;k
+        return response.data;
     } catch (error) {
         throw new Error(`Erro ao buscar dados do Truecaller: ${error.message}`);
     }
@@ -671,9 +716,9 @@ async loadSettings() {
     }
 }
 
-	async saveSettings() {
+async saveSettings() {
 		await this.saveData(this.settings);
-	}
+}
 	
 }
 
