@@ -1,94 +1,103 @@
-# Obsidian Sample Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+O **Odysseus** é um plugin para o Obsidian que permite integrar diversas APIs externas, como Instagram Scraper, Pesquisa Web em Tempo Real e Truecaller, para enriquecer suas notas com dados dinâmicos. Abaixo estão as instruções para configurar e usar o plugin.
 
-This project uses TypeScript to provide typeinsta checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+---
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## **Configuração do Plugin**
 
-## First time developing plugins?
+### 1. **RapidAPI Key**
+   - **Descrição:** Chave de API fornecida pelo RapidAPI para acessar o serviço `instagram-scraper-api2`.
+   - **Campo:** `RapidAPI Key`
+   - **Exemplo:** `d71bd39b97msh2d2f248d6e03`
 
-Quick starting guide for new plugin devs:
+### 2. **RapidAPI Host**
+   - **Descrição:** Host da API do RapidAPI para o serviço `instagram-scraper-api2`.
+   - **Campo:** `RapidAPI Host`
+   - **Exemplo:** `instagram-scraper-api2.p.rapidapi.com`
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### 3. **Pasta de Armazenamento**
+   - **Descrição:** Especifique a pasta onde as imagens baixadas serão armazenadas.
+   - **Campo:** `Pasta de armazenamento`
+   - **Valor Padrão:** `Default`
 
-## Releasing new releases
+### 4. **Nome da Pasta Customizada**
+   - **Descrição:** Defina um nome personalizado para a pasta onde as mídias serão salvas.
+   - **Campo:** `Nome da pasta customizada`
+   - **Exemplo:** `Custom folder name`
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### 5. **Caminho do Arquivo JSON**
+   - **Descrição:** Caminho para o arquivo JSON que contém a lista de sites ou dados a serem processados.
+   - **Campo:** `Caminho do arquivo JSON`
+   - **Exemplo:** `Insira o caminho para o arquivo`
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### 6. **Chave API para Pesquisa Web em Tempo Real**
+   - **Descrição:** Chave de API para acessar o serviço de Pesquisa Web em Tempo Real.
+   - **Campo:** `Chave API para Pesquisa Web em Tempo Real`
+   - **Exemplo:** `d71bd39b97msh2d2f248d6e03`
 
-## Adding your plugin to the community plugin list
+### 7. **Limite para Resultados de Pesquisa Web em Tempo Real**
+   - **Descrição:** Defina o número máximo de resultados a serem retornados pela Pesquisa Web em Tempo Real.
+   - **Campo:** `Limite para resultados de Pesquisa Web em Tempo Real`
+   - **Exemplo:** `300`
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### 8. **Chave API para Truecaller**
+   - **Descrição:** Chave de API para acessar o serviço Truecaller.
+   - **Campo:** `Chave API para Truecaller`
+   - **Exemplo:** `d71bd39b97msh2d2f248d6e03`
 
-## How to use
+### 9. **Host API para Truecaller**
+   - **Descrição:** Host da API para o serviço Truecaller.
+   - **Campo:** `Host API para Truecaller`
+   - **Exemplo:** `truecaller-data2.p.rapidapi.com`
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+---
 
-## Manually installing the plugin
+## **Como Usar o Plugin**
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+### 1. **Instalação**
+   - Acesse a aba **Community Plugins** no Obsidian.
+   - Procure por **Odysseus** e instale o plugin.
+   - Ative o plugin nas configurações.
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+### 2. **Configuração Inicial**
+   - Abra as configurações do plugin e preencha os campos conforme descrito acima.
 
-## Funding URL
+### 3. **Uso do Instagram Scraper**
+   - Utilize o comando do plugin para baixar mídias do Instagram diretamente para a pasta especificada.
 
-You can include funding URLs where people who use your plugin can financially support it.
+### 4. **Pesquisa Web em Tempo Real**
+   - Execute pesquisas dinâmicas na web e insira os resultados diretamente em suas notas.
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+### 5. **Integração com Truecaller**
+   - Use o plugin para buscar informações de contatos diretamente no Truecaller.
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+---
+
+## **Exemplos de Uso**
+
+### Exemplo 1: Baixar Mídias do Instagram
+```markdown
+![[Instagram Media/Custom folder name/image1.png]]
 ```
 
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+### Exemplo 2: Resultados de Pesquisa Web
+```markdown
+- Resultado 1: [Link](https://exemplo.com)
+- Resultado 2: [Link](https://outroexemplo.com)
 ```
 
-## API Documentation
+### Exemplo 3: Informações do Truecaller
+```markdown
+Nome: João Silva  
+Telefone: +55 11 99999-9999  
+Localização: São Paulo, Brasil
+```
 
-See https://github.com/obsidianmd/obsidian-api
+---
+
+## **Dicas e Melhores Práticas**
+- Mantenha suas chaves de API seguras e não as compartilhe publicamente.
+- Utilize pastas personalizadas para organizar melhor os arquivos baixados.
+- Atualize o plugin regularmente para garantir compatibilidade com novas versões do Obsidian.
+
+---
